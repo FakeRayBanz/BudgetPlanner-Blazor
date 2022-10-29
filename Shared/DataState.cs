@@ -34,7 +34,8 @@ namespace BudgetPlanner_Blazor.Shared
                 AccountList = AccountsCollection.Find(new BsonDocument()).ToList();
                 ConnectionSuccess = true;
             }
-            catch (Exception)
+
+            catch (MongoAuthenticationException)
             {
                 ConnectionSuccess = false;
             }
