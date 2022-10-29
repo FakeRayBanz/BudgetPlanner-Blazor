@@ -1,0 +1,69 @@
+﻿@page "/importdata"
+
+
+@using MongoDB.Bson
+@using MongoDB.Bson.Serialization
+@using MongoDB.Driver
+@using System.Text.Json
+@using System.Text.Unicode
+@using BudgetPlanner_Blazor.Models
+
+@inject DataState dataState
+<PageTitle>Import Data</PageTitle>
+
+<h2>Import Data</h2>
+
+@if (dataState.ConnectionSuccess == false || dataState.ConnectionSuccess == null)
+{
+    <h4>Please connect to the database first</h4>
+}
+else
+{
+    <div style="display:flex; flex-direction:column; max-width:400px;">
+        
+
+        Connect to the database and import a json file
+
+        <label>@label</label>
+        <InputFile OnChange="@LoadFile" />
+        <button @onclick="LoadDummyData">Load Dummy Data</button>
+    </div>
+}
+
+@code {
+    string label = "waiting";
+
+    private async Task LoadFile(InputFileChangeEventArgs e)
+    {
+
+        IBrowserFile loadedFile = e.File;
+
+        using (var memoryStream = new MemoryStream())
+        {
+            // Blazor InputFile doesnt support synchronous reads, requires async
+            await loadedFile.OpenReadStream(20480000).CopyToAsync(memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin);
+            Account? account = JsonSerializer.Deserialize<Account>(memoryStream);
+            dataState.AccountList.Add(account);
+            if (dataState.AccountList.Count() > 1)
+            {
+                dataState.GenerateGlobalAccount();
+            }
+
+            //var bsonDocument = BsonExtensionMethods.ToBsonDocument(account);
+            dataState.AccountsCollection.InsertOne(account);
+
+            label = "json deserialized and uploaded";
+        }
+    }
+
+    async Task LoadDummyData()
+    {
+        var newAccount = new Account();
+        newAccount.AccountGlobalId = "TestID";
+        var newTransaction = new Transaction();
+        newTransaction.TransactionId = "TestID";
+        newAccount.Transactions.Add(newTransaction);
+        await dataState.AccountsCollection.InsertOneAsync(newAccount);
+    }
+}

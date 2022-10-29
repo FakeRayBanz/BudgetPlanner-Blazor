@@ -10,28 +10,35 @@
 @inject DataState dataState
 
 <PageTitle>Index</PageTitle>
-<div style="display:flex; flex-direction:column;">
-    <h1>Budget Planner</h1>
+<div style="display:flex; flex-direction:column; max-width:400px">
+    <h2>Connect to database</h2>
 
     Connect to the database and import a json file
 
     <label>@label</label>
-    <InputFile OnChange="@LoadFile" />
-    @foreach (var account in dataState.AccountList)
-    {
-        @if (account.Transactions.Count != 0)
-        {
-            <ApexChart TItem="Transaction" Title="Rolling Balance" Width="1200" Height="600" XAxisType="XAxisType.Datetime">
-                <ApexPointSeries TItem="Transaction"
-                         Items="account.Transactions"
-                         SeriesType="@SeriesType.Line"
-                         Name="Bank Balance"
-                         XValue="@(e => e.FormattedDate)"
-                         YValue="@(e => (decimal)e.BalanceNumeric)" />
-            </ApexChart>
-        }
-    }
-    <button @onclick="LoadDummyData">Load Dummy Data</button>
+    
+    <EditForm Model="dataState" OnValidSubmit="SubmitDBStrings">
+        <DataAnnotationsValidator />
+        <div style="display:flex; flex-direction:column">
+            <div style="display:flex; flex-direction:row">
+                <span>Database Username</span>
+                <InputText @bind-Value="dataState.DBUserName" />
+                <ValidationMessage For="() => dataState.DBUserName" />
+            </div>
+            <div style="display:flex; flex-direction:row">
+                <span>Database Password</span>
+                <InputText @bind-Value="dataState.DBPassword" />
+                <ValidationMessage For="() => dataState.DBPassword" />
+            </div>
+            <div style="display:flex; flex-direction:row">
+                <span>Database Server Address</span>
+                <InputText @bind-Value="dataState.DBServerAddress" />
+                <ValidationMessage For="() => dataState.DBServerAddress" />
+            </div>
+            <button type="submit">Submit</button>
+        </div>
+    </EditForm>
+    
 </div>
 
 
@@ -41,66 +48,28 @@
     //On page load connect to DB and generate a merged global account
     protected override async Task OnInitializedAsync()
     {
-        dataState.ConnectToDB();
+        if (!string.IsNullOrEmpty(dataState.DBUserName) && !string.IsNullOrEmpty(dataState.DBPassword) && !string.IsNullOrEmpty(dataState.DBServerAddress))
+        {
+            dataState.ConnectToDB();
+        }
         if (dataState.AccountList.Count() > 1)
         {
-            GenerateGlobalAccount();
+            dataState.GenerateGlobalAccount();
         }
     }
 
-    private async Task LoadFile(InputFileChangeEventArgs e)
+    void SubmitDBStrings()
     {
-
-        IBrowserFile loadedFile = e.File;
-
-        using (var memoryStream = new MemoryStream())
+        dataState.ConnectToDB();
+        switch (dataState.ConnectionSuccess)
         {
-            // Blazor InputFile doesnt support synchronous reads, requires async
-            await loadedFile.OpenReadStream(20480000).CopyToAsync(memoryStream);
-            memoryStream.Seek(0, SeekOrigin.Begin);
-            Account? account = JsonSerializer.Deserialize<Account>(memoryStream);
-            dataState.AccountList.Add(account);
-            if (dataState.AccountList.Count() > 1)
-            {
-                //GenerateGlobalAccount();
-            }
-
-            //var bsonDocument = BsonExtensionMethods.ToBsonDocument(account);
-            dataState.AccountsCollection.InsertOne(account);
-
-            label = "json deserialized and uploaded";
-        }
-    }
-    void GenerateGlobalAccount()
-    {
-        Account globalAccount = new Account();
-        globalAccount.Transactions = JsonSerializer.Deserialize<List<Transaction>>(JsonSerializer.Serialize(dataState.AccountList[1].Transactions));
-        //globalAccount.Transactions = dataState.AccountList[1].Transactions;
-        foreach (var transaction in globalAccount.Transactions)
-        {
-            foreach (var secondTransaction in dataState.AccountList[0].Transactions)
-            {
-                if (transaction.FormattedDate == secondTransaction.FormattedDate)
-                {
-                    transaction.BalanceNumeric += secondTransaction.BalanceNumeric;
-                    break;
-                }
-            }
-        }
-        dataState.AccountList.Add(globalAccount);
-    }
-
-    async Task LoadDummyData()
-    {
-
-        //dataState.AccountList = MongoDB.Bson.Serialization.BsonSerializer.Deserialize<Account>(dataState.TransactionsCollection);
-        //var query = Query.EQ();
-        var newAccount = new Account();
-        newAccount.AccountGlobalId = "TestID";
-        var newTransaction = new Transaction();
-        newTransaction.TransactionId = "TestID";
-        //newAccount.Transactions.Add(newTransaction);
-        await dataState.AccountsCollection.InsertOneAsync(newAccount);
-
+            case true:
+                label = "Success";
+                dataState.GenerateGlobalAccount();
+                break;
+            case false:
+                label = "Failure";
+                break;
+        }   
     }
 }

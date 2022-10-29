@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33006.217
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BudgetPlanner-Blazor", "BudgetPlanner-Blazor.csproj", "{CA164DC3-AB61-4A53-807A-DF41F7A6AE76}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BudgetPlanner-Blazor", "BudgetPlanner-Blazor.csproj", "{CA164DC3-AB61-4A53-807A-DF41F7A6AE76}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

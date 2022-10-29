@@ -1,0 +1,48 @@
+﻿@page "/overviewgraphs"
+
+@inject DataState dataState
+@using BudgetPlanner_Blazor.Data
+@using BudgetPlanner_Blazor.Models
+
+<PageTitle>Overview Graphs</PageTitle>
+
+<h2>Overview Graphs</h2>
+
+@if (dataState.ConnectionSuccess == false || dataState.ConnectionSuccess == null)
+{
+    <h4>Please connect to the database first</h4>
+}
+else
+{
+    @foreach (var account in dataState.AccountList)
+    {
+        @if (account.Transactions.Count != 0)
+        {
+            <ApexChart TItem="Transaction" Title="Rolling Balance" Width="1200" Height="600" XAxisType="XAxisType.Datetime">
+                <ApexPointSeries TItem="Transaction"
+                     Items="account.Transactions"
+                     SeriesType="@SeriesType.Line"
+                     Name="Bank Balance"
+                     XValue="@(e => e.FormattedDate)"
+                     YValue="@(e => (decimal)e.BalanceNumeric)" />
+            </ApexChart>
+        }
+    }
+    @if (dataState.GlobalAccount.Transactions.Count() != 0)
+    {
+        <ApexChart TItem="Transaction" Title="Rolling Balance" Width="1200" Height="600" XAxisType="XAxisType.Datetime">
+            <ApexPointSeries TItem="Transaction"
+                     Items="dataState.GlobalAccount.Transactions"
+                     SeriesType="@SeriesType.Line"
+                     Name="Bank Balance"
+                     XValue="@(e => e.FormattedDate)"
+                     YValue="@(e => (decimal)e.BalanceNumeric)" />
+        </ApexChart>
+    }
+}
+
+
+
+@code {
+
+}
